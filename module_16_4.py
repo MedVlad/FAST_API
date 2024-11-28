@@ -1,3 +1,5 @@
+from operator import index
+
 from fastapi import FastAPI, HTTPException, Path
 from typing import Annotated
 
@@ -20,9 +22,9 @@ async def get_users():
 async def create_user(username: Annotated[str, Path(min_length=5, max_length=20, title="Enter username",
                                                 description="The USERNAME must be a length  >=5 and <=20",
                                                 example="UrbanUser")],
-                      age: Annotated[int, Path(ge=18, le=20, title="Enter age",
-                                               description="The AGE must be a integer >=18 and <=20 ",
-                                               example=20)]):
+                      age: Annotated[int, Path(ge=18, le=100, title="Enter age",
+                                               description="The AGE must be a integer >=18 and <=100 ",
+                                               example=24)]):
    if len(users) > 0:
        id = len(users)+1
    else:
@@ -38,11 +40,22 @@ async def update_user(user_id: Annotated[str, Path(regex='^[1-9]', title="Enter 
                       username: Annotated[str, Path(min_length=5, max_length=20, title="Enter username",
                                                     description="The USERNAME must be a length  >=5 and <=20",
                                                     example="UrbanUser")],
-                      age: Annotated[int, Path(ge=18, le=20, title="Enter age",
-                                               description="The AGE must be a integer >=18 and <=30 ",
+                      age: Annotated[int, Path(ge=18, le=100, title="Enter age",
+                                               description="The AGE must be a integer >=18 and <=100 ",
                                                example=24)]):
-    for key in users:
-        if key == user_id:
-            users[str(key)] = f"Имя: {username}, возраст: {age}"
-        raise HTTPException(status_code=404, detail="Пользователь не найден")
-    return {"message": f"The user {user_id} is updated"}
+    for user in users:
+        if user.id == int(user_id):
+            user.username = username
+            user.age = age
+            return user
+        raise HTTPException(status_code=404, detail="User was not found")
+
+@app.delete("/user/{user_id}")
+async def delete_user(user_id: Annotated[str, Path(regex='^[1-9]', title="Enter user_id",
+                                                   description="user_id",
+                                                   example="1")]):
+    for user in users:
+        if int(user_id) == user.id:
+            return users.pop(user.id-1)
+    raise HTTPException(status_code=404, detail="User was not found")
+
